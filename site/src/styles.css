@@ -1,0 +1,265 @@
+@import "tailwindcss";
+
+/* -----------------------------------------------------------------------------
+   Design tokens
+
+   Copied from the app's src/index.css so the mockups use the exact colours,
+   fonts and surfaces of the real notch. Keep them in sync when the app's
+   theme changes.
+   -------------------------------------------------------------------------- */
+
+@theme {
+  --font-sans: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+
+  --color-accent: #2f7bff;
+  --color-status-green: #30d158;
+  --color-status-amber: #ffb340;
+  --color-status-red: #ff453a;
+  --color-status-purple: #bf5af2;
+  --color-surface: #000;
+  --color-raised: rgb(255 255 255 / 0.06);
+
+  --color-on-accent: #fff;
+  --color-knob: #fff;
+  --color-shade: #000;
+  --color-well: #000;
+  --color-thumb: rgb(255 255 255 / 0.14);
+
+  /* The site's own page background, a step above the app's pure black so
+     the black notch still reads against it. */
+  --color-page: #0b0b0d;
+
+  --drop-shadow-notch: 0 6px 12px rgb(0 0 0 / 0.35);
+
+  --animate-breathe: breathe 2.4s ease-in-out infinite;
+
+  @keyframes breathe {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
+}
+
+/* Dark palette and the glass surface, as the app sets them with
+   data-appearance="dark" and data-theme="glass". */
+:root {
+  --color-white: #fff;
+  --color-black: #000;
+  --glass-tint: rgb(16 16 18 / 0.62);
+  --notch-fill: #18181a;
+  --notch-edge: rgb(255 255 255 / 0.1);
+  --menu-fill: rgb(30 30 34 / 0.94);
+  --sheet-fill: rgb(18 18 20 / 0.55);
+  --layer-blur: blur(28px) saturate(1.5);
+  color-scheme: dark;
+}
+
+/* -----------------------------------------------------------------------------
+   Page
+   -------------------------------------------------------------------------- */
+
+html {
+  background: var(--color-page);
+  scroll-padding-top: 7rem;
+}
+
+body {
+  margin: 0;
+  background: var(--color-page);
+  font-family: var(--font-sans);
+  color: --alpha(var(--color-white) / 92%);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 45%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   App utilities, copied from the app
+   -------------------------------------------------------------------------- */
+
+@utility surface-menu {
+  background: var(--menu-fill);
+  backdrop-filter: var(--layer-blur);
+}
+
+/* The app fades scroll areas only where content continues; the mockups never
+   scroll, so the edge that would continue is faded statically. */
+@utility fade-bottom {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+
+/* Chat and transcript Markdown, as the app's .md.chat styles it. */
+.md {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: --alpha(var(--color-white) / 82%);
+}
+.md.chat {
+  font-size: 13px;
+  line-height: 1.62;
+}
+.md > :first-child {
+  margin-top: 0;
+}
+.md p,
+.md ul {
+  margin: 0.55em 0;
+}
+.md ul {
+  list-style: disc;
+  padding-left: 1.2em;
+}
+.md code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  background: --alpha(var(--color-white) / 8%);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+/* -----------------------------------------------------------------------------
+   Docs prose
+   -------------------------------------------------------------------------- */
+
+.prose {
+  font-size: 15px;
+  line-height: 1.7;
+  color: --alpha(var(--color-white) / 72%);
+}
+.prose h2:not(.not-prose *) {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 600;
+  color: --alpha(var(--color-white) / 95%);
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.01em;
+}
+.prose h3:not(.not-prose *) {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: --alpha(var(--color-white) / 92%);
+  margin: 2rem 0 0.5rem;
+}
+.prose p:not(.not-prose *),
+.prose ul:not(.not-prose *),
+.prose ol:not(.not-prose *),
+.prose pre:not(.not-prose *),
+.prose table:not(.not-prose *) {
+  margin: 0.85rem 0;
+}
+.prose ul:not(.not-prose *) {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.prose ol:not(.not-prose *) {
+  list-style: decimal;
+  padding-left: 1.4rem;
+}
+.prose li:not(.not-prose *) {
+  margin: 0.3rem 0;
+}
+.prose li:not(.not-prose *)::marker {
+  color: --alpha(var(--color-white) / 30%);
+}
+.prose strong:not(.not-prose *) {
+  font-weight: 600;
+  color: --alpha(var(--color-white) / 90%);
+}
+.prose a:not(.not-prose *) {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+.prose a:hover:not(.not-prose *) {
+  text-decoration: underline;
+}
+.prose code:not(.not-prose *) {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  color: --alpha(var(--color-white) / 85%);
+  background: --alpha(var(--color-white) / 7%);
+  padding: 0.12em 0.38em;
+  border-radius: 5px;
+}
+.prose pre:not(.not-prose *) {
+  overflow-x: auto;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: --alpha(var(--color-white) / 4%);
+  border: 1px solid --alpha(var(--color-white) / 7%);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.prose pre code:not(.not-prose *) {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+.prose table:not(.not-prose *) {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.prose th:not(.not-prose *) {
+  text-align: left;
+  font-weight: 600;
+  color: --alpha(var(--color-white) / 85%);
+}
+.prose th:not(.not-prose *),
+.prose td:not(.not-prose *) {
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  border-bottom: 1px solid --alpha(var(--color-white) / 8%);
+  vertical-align: top;
+}
+
+/* The Now playing hint in the collapsed notch. The app animates bar heights
+   with framer-motion; a transform does the same here without it. */
+.eq-bar {
+  transform-origin: bottom;
+  animation: eq 1s ease-in-out infinite alternate;
+}
+@keyframes eq {
+  from {
+    transform: scaleY(0.35);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .eq-bar {
+    animation: none;
+  }
+}
+
+@utility fade-top {
+  mask-image: linear-gradient(to top, #000 calc(100% - 28px), transparent);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}

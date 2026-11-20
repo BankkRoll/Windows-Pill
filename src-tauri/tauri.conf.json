@@ -1,0 +1,92 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Pill",
+  "version": "0.1.0",
+  "identifier": "io.github.bankkroll.pill",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "pill",
+        "title": "Pill",
+        "width": 800,
+        "height": 500,
+        "resizable": false,
+        "maximizable": false,
+        "minimizable": false,
+        "decorations": false,
+        "transparent": true,
+        "shadow": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "focus": false,
+        "visible": false,
+        "dragDropEnabled": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "publisher": "BankkRoll",
+    "copyright": "Copyright 2026 BankkRoll. Licensed under Apache-2.0.",
+    "category": "DeveloperTool",
+    "shortDescription": "A notch for project tasks and coding agents",
+    "longDescription": "Pill sits at the top of the screen as a notch. It keeps tasks for the git repositories it finds and runs Claude Code and Codex agents on them in isolated git worktrees.",
+    "license": "Apache-2.0",
+    "licenseFile": "../LICENSE",
+    "createUpdaterArtifacts": true,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.png",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "",
+      "tsp": false,
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "allowDowngrades": false,
+      "nsis": {
+        "installMode": "currentUser",
+        "installerIcon": "icons/icon.ico",
+        "displayLanguageSelector": false,
+        "languages": [
+          "English"
+        ],
+        "compression": "lzma"
+      },
+      "wix": {
+        "upgradeCode": "fe04d763-be11-4240-a6e7-d03aa0f9d1c0",
+        "language": "en-US"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDlEN0I3NTI0REUzODcyRDMKUldUVGNqamVKSFY3blM4eDhWS1hlRWl3Mm1LNHVqcHMvV0toTEdNaC9MUTNOOWxacFVteTlXemUK",
+      "endpoints": [
+        "https://github.com/OWNER/REPO/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}

@@ -1,0 +1,113 @@
+# Builds the Windows installers when a version tag is pushed and publishes
+# them, with signed updater artifacts and `latest.json`, as a draft GitHub
+# Release. Publishing the draft is what makes installed copies update.
+#
+# Required repository secrets:
+#   TAURI_SIGNING_PRIVATE_KEY           contents of the updater private key
+#                                       (pnpm tauri signer generate)
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  its password; leave the secret unset
+#                                       for a key generated without one
+#
+# Release steps: bump the version in package.json, src-tauri/Cargo.toml and
+# src-tauri/tauri.conf.json, commit, then `git tag v0.2.0 && git push --tags`.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      # NOTE: a tag whose version differs from the app would publish a
+      # latest.json that installed copies treat as no update at all.
+      - name: Check the tag matches the version
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg=$(node -p "require('./package.json').version")
+          conf=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          cargo=$(grep -m1 '^version' src-tauri/Cargo.toml | cut -d'"' -f2)
+          for v in "$pkg" "$conf" "$cargo"; do
+            [ "$v" = "$tag" ] || { echo "Tag v$tag does not match version $v"; exit 1; }
+          done
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Test
+        run: |
+          pnpm test
+          node --test plugins/cve-watch
+          cargo test --manifest-path src-tauri/Cargo.toml --locked
+
+      # NOTE: Authenticode signing is wired but off. To turn it on, add the
+      # certificate as a base64 PFX secret (WINDOWS_CERTIFICATE) with its
+      # password (WINDOWS_CERTIFICATE_PASSWORD), uncomment this step, and set
+      # bundle.windows.certificateThumbprint and timestampUrl in
+      # src-tauri/tauri.conf.json.
+      # - name: Import code signing certificate
+      #   shell: pwsh
+      #   env:
+      #     WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+      #     WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+      #   run: |
+      #     $pfx = Join-Path $env:RUNNER_TEMP "cert.pfx"
+      #     [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
+      #     $password = ConvertTo-SecureString $env:WINDOWS_CERTIFICATE_PASSWORD -AsPlainText -Force
+      #     Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $password
+      #     Remove-Item $pfx
+
+      # Points installed copies at this repository's releases, replacing the
+      # OWNER/REPO placeholder in tauri.conf.json for this build only.
+      - name: Set the update endpoint
+        shell: pwsh
+        run: |
+          $endpoint = "https://github.com/${{ github.repository }}/releases/latest/download/latest.json"
+          @{ plugins = @{ updater = @{ endpoints = @($endpoint) } } } |
+            ConvertTo-Json -Depth 5 |
+            Set-Content -Encoding utf8 src-tauri/tauri.release.conf.json
+
+      - name: Build and publish
+        # SECURITY: pinned to a commit (v0.6.2); this step holds the updater key.
+        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Pill ${{ github.ref_name }}
+          releaseBody: See the commits since the previous release for what changed.
+          releaseDraft: true
+          prerelease: false
+          includeUpdaterJson: true
+          updaterJsonPreferNsis: true
+          args: --config src-tauri/tauri.release.conf.json

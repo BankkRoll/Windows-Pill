@@ -1,0 +1,384 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+
+  /* Overridden at runtime from config.accent. */
+  --color-accent: #2f7bff;
+  --color-status-green: #30d158;
+  --color-status-amber: #ffb340;
+  --color-status-red: #ff453a;
+  --color-status-purple: #bf5af2;
+  --color-surface: #000;
+  --color-raised: rgb(255 255 255 / 0.06);
+
+  /* White and black flip in the light palette (see below), so every
+     text-white/80 and bg-white/8 follows the palette. These never flip:
+     labels and glyphs on accent or status fills, and switch knobs. */
+  --color-on-accent: #fff;
+  --color-knob: #fff;
+  /* Shadow ink (shadow-shade/50) and recessed wells (bg-well/25). Both
+     soften in light. */
+  --color-shade: #000;
+  --color-well: #000;
+  /* The selected segment of a segmented control. */
+  --color-thumb: rgb(255 255 255 / 0.14);
+
+  /* Below-only shadow: the notch is attached to the screen edge, so nothing
+     should glow above or beside its top. */
+  --drop-shadow-notch: 0 6px 12px rgb(0 0 0 / 0.35);
+
+  --animate-breathe: breathe 2.4s ease-in-out infinite;
+
+  @keyframes breathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+  }
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  /* The native window is transparent; only the pill shape is painted. */
+  background: transparent;
+}
+
+/* -----------------------------------------------------------------------------
+   Palettes and surfaces
+
+   Two independent axes: the surface style (data-theme: glass, graphite,
+   black) and the palette (data-appearance: dark, light). main.tsx sets both,
+   plus data-tint, on <html>. Every rule matches all of its attributes on one
+   element, so a Settings preview tile can carry its own combination without
+   the page's leaking in. :root holds the dark black defaults for the first
+   frame, before the config arrives.
+   -------------------------------------------------------------------------- */
+
+/* Dark palette. Repeats the @theme values so a dark tile inside a light page
+   resets them. */
+:root,
+[data-appearance="dark"] {
+  --color-white: #fff;
+  --color-black: #000;
+  --color-shade: #000;
+  --color-well: #000;
+  --color-thumb: rgb(255 255 255 / 0.14);
+  --color-status-green: #30d158;
+  --color-status-amber: #ffb340;
+  --color-status-red: #ff453a;
+  --color-status-purple: #bf5af2;
+  --drop-shadow-notch: 0 6px 12px rgb(0 0 0 / 0.35);
+  --shadow-thumb: 0 1px 2px rgb(0 0 0 / 0.35), inset 0 0.5px 0 rgb(255 255 255 / 0.08);
+  /* Glass is the blurred wallpaper sample behind each surface under the
+     same tint, so notch and window match and text contrast doesn't depend
+     on the wallpaper. */
+  --glass-tint: rgb(16 16 18 / 0.62);
+  --glass-luminosity: transparent;
+}
+[data-appearance="dark"][data-tint="light"] {
+  --glass-tint: rgb(16 16 18 / 0.46);
+}
+[data-appearance="dark"][data-tint="dark"] {
+  --glass-tint: rgb(14 14 16 / 0.78);
+}
+
+/* Light palette. "White" becomes near-black ink and "black" becomes white,
+   so the hundreds of white/N and black/N utilities invert in one place. */
+[data-appearance="light"] {
+  --color-white: #111114;
+  --color-black: #fff;
+  --color-shade: rgb(0 0 0 / 0.4);
+  --color-well: rgb(17 17 20 / 0.18);
+  --color-thumb: #fff;
+  /* The dark status hues are too faint as text on white. These pass 4.5:1
+     on the light surfaces and still carry white labels. */
+  --color-status-green: #187a36;
+  --color-status-amber: #a35400;
+  --color-status-red: #d70015;
+  --color-status-purple: #8944ab;
+  --drop-shadow-notch: 0 6px 14px rgb(0 0 0 / 0.16);
+  --shadow-thumb: 0 1px 2px rgb(0 0 0 / 0.16), 0 0 0 0.5px rgb(0 0 0 / 0.06);
+  /* A white tint alone turns dark wallpapers a muddy gray. The luminosity
+     layer first lifts the wallpaper to a light value while keeping its hue,
+     like Mica, so dark text reads on any wallpaper. */
+  --glass-tint: rgb(246 246 248 / 0.55);
+  --glass-luminosity: rgb(236 236 240 / 0.8);
+}
+[data-appearance="light"][data-tint="light"] {
+  --glass-tint: rgb(246 246 248 / 0.42);
+  --glass-luminosity: rgb(236 236 240 / 0.7);
+}
+[data-appearance="light"][data-tint="dark"] {
+  --glass-tint: rgb(246 246 248 / 0.72);
+  --glass-luminosity: rgb(236 236 240 / 0.9);
+}
+
+/* Surfaces, shared by the notch and the detached window. menu-fill paints
+   floating layers (menus, popovers, toasts, the save bar), sheet-fill
+   panel-sized layers such as task detail. On glass both stay translucent and
+   blur what is behind them, so they read as the same material.
+   IMPORTANT: the light --window-fill values must match appearance::window_fill
+   in Rust, which paints the pop-out before the page does (a test checks). */
+:root,
+[data-theme="black"][data-appearance="dark"] {
+  --notch-fill: #000;
+  --notch-edge: transparent;
+  --window-fill: #000;
+  --menu-fill: #161618;
+  --sheet-fill: #000;
+  --layer-blur: none;
+}
+[data-theme="graphite"][data-appearance="dark"] {
+  --notch-fill: #1c1c1e;
+  --notch-edge: rgb(255 255 255 / 0.07);
+  --window-fill: #1c1c1e;
+  --menu-fill: #2a2a2d;
+  --sheet-fill: #1c1c1e;
+  --layer-blur: none;
+}
+[data-theme="glass"][data-appearance="dark"] {
+  /* Used until the first wallpaper sample arrives. */
+  --notch-fill: #18181a;
+  --notch-edge: rgb(255 255 255 / 0.1);
+  --window-fill: #18181a;
+  --menu-fill: rgb(30 30 34 / 0.94);
+  --sheet-fill: rgb(18 18 20 / 0.55);
+  --layer-blur: blur(28px) saturate(1.5);
+}
+/* Light surfaces all get a hairline edge; against white app windows the
+   notch would otherwise have no outline. */
+[data-theme="black"][data-appearance="light"] {
+  --notch-fill: #fff;
+  --notch-edge: rgb(0 0 0 / 0.1);
+  --window-fill: #ffffff;
+  --menu-fill: #fff;
+  --sheet-fill: #fff;
+  --layer-blur: none;
+}
+[data-theme="graphite"][data-appearance="light"] {
+  --notch-fill: #f2f2f4;
+  --notch-edge: rgb(0 0 0 / 0.08);
+  --window-fill: #f2f2f4;
+  --menu-fill: #fbfbfc;
+  --sheet-fill: #f2f2f4;
+  --layer-blur: none;
+}
+[data-theme="glass"][data-appearance="light"] {
+  --notch-fill: #ececef;
+  --notch-edge: rgb(0 0 0 / 0.1);
+  --window-fill: #ececef;
+  --menu-fill: rgb(250 250 252 / 0.92);
+  --sheet-fill: rgb(246 246 248 / 0.62);
+  --layer-blur: blur(28px) saturate(1.5);
+}
+
+/* NOTE: Translucent ink looks fainter on white than translucent white does
+   on black, because alpha blends in gamma-encoded sRGB: text-white/45 is
+   4.5:1 on a dark menu but 3:1 inverted. These raise the muted text steps in
+   light to the contrast they have in dark. Same specificity as the utilities
+   and later in the layer, so hover and state variants still win. */
+@layer utilities {
+  :where([data-appearance="light"]) {
+    .text-white\/25,
+    .placeholder\:text-white\/25::placeholder { color: --alpha(var(--color-white) / 36%); }
+    .text-white\/30,
+    .placeholder\:text-white\/30::placeholder,
+    .disabled\:text-white\/30:disabled { color: --alpha(var(--color-white) / 42%); }
+    .text-white\/35 { color: --alpha(var(--color-white) / 48%); }
+    .text-white\/38 { color: --alpha(var(--color-white) / 52%); }
+    .text-white\/40 { color: --alpha(var(--color-white) / 54%); }
+    .text-white\/45 { color: --alpha(var(--color-white) / 59%); }
+    .text-white\/50 { color: --alpha(var(--color-white) / 64%); }
+    .text-white\/55 { color: --alpha(var(--color-white) / 68%); }
+    .text-white\/60 { color: --alpha(var(--color-white) / 72%); }
+    .text-white\/65 { color: --alpha(var(--color-white) / 76%); }
+  }
+}
+
+html.detached,
+html.detached body,
+html.detached #root {
+  background: var(--window-fill);
+}
+
+
+body {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: --alpha(var(--color-white) / 92%);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+}
+
+/* Anything clickable shows the hand cursor; the body default is the arrow. */
+button:not(:disabled),
+[role="button"],
+[role="radio"],
+[role="switch"],
+[role="menuitemradio"],
+[role="slider"],
+a[href],
+select,
+summary,
+label:has(input[type="checkbox"]),
+input[type="checkbox"],
+input[type="time"],
+input[type="date"] {
+  cursor: pointer;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  user-select: text;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 45%, transparent);
+}
+
+/* Markdown preview: compact, quiet typography that matches the panel. */
+.md {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: --alpha(var(--color-white) / 82%);
+  user-select: text;
+}
+.md > :first-child { margin-top: 0; }
+.md h1, .md h2, .md h3 { color: --alpha(var(--color-white) / 95%); font-weight: 600; margin: 1em 0 0.4em; line-height: 1.3; }
+.md h1 { font-size: 16px; }
+.md h2 { font-size: 14px; }
+.md h3 { font-size: 13px; }
+.md p, .md ul, .md ol, .md pre, .md blockquote, .md table { margin: 0.5em 0; }
+.md ul { list-style: disc; padding-left: 1.2em; }
+.md ol { list-style: decimal; padding-left: 1.4em; }
+.md li > input[type="checkbox"] { margin-right: 0.4em; }
+/* GFM task-list boxes come from rendered Markdown, so they can't be the
+   Checkbox component; this draws the same box and check. */
+.md input[type="checkbox"] {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+  border-radius: 4px;
+  background: --alpha(var(--color-white) / 6%);
+  box-shadow: inset 0 0 0 1px --alpha(var(--color-white) / 25%);
+  cursor: default;
+}
+.md input[type="checkbox"]:checked {
+  background: var(--color-accent);
+  box-shadow: none;
+}
+.md input[type="checkbox"]:checked::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background: var(--color-on-accent);
+  clip-path: polygon(14% 52%, 0 66%, 38% 100%, 100% 22%, 86% 8%, 38% 72%);
+}
+.md a { color: var(--color-accent); text-decoration: none; cursor: pointer; }
+.md a:hover { text-decoration: underline; }
+.md code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 11.5px; background: --alpha(var(--color-white) / 8%); padding: 0.1em 0.35em; border-radius: 4px; }
+.md pre { background: --alpha(var(--color-white) / 5%); padding: 0.6em 0.8em; border-radius: 8px; overflow-x: auto; }
+.md pre code { background: none; padding: 0; }
+.md blockquote { border-left: 2px solid --alpha(var(--color-white) / 20%); padding-left: 0.8em; color: --alpha(var(--color-white) / 60%); }
+.md hr { border: 0; border-top: 1px solid --alpha(var(--color-white) / 10%); margin: 1em 0; }
+.md table { border-collapse: collapse; }
+.md th, .md td { border: 1px solid --alpha(var(--color-white) / 10%); padding: 0.25em 0.6em; }
+/* Muted steps get the same lift as the text-white/N utilities above. */
+[data-appearance="light"] .md blockquote { color: --alpha(var(--color-white) / 72%); }
+
+/* Slim scrollbars that stay out of sight until the pointer is over the
+   scrolling area. */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+:hover::-webkit-scrollbar-thumb {
+  background: --alpha(var(--color-white) / 14%);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: --alpha(var(--color-white) / 24%);
+  background-clip: padding-box;
+}
+[data-appearance="light"] :hover::-webkit-scrollbar-thumb {
+  background: --alpha(var(--color-white) / 22%);
+  background-clip: padding-box;
+}
+[data-appearance="light"] ::-webkit-scrollbar-thumb:hover {
+  background: --alpha(var(--color-white) / 34%);
+  background-clip: padding-box;
+}
+
+/* Chat replies: roomier type, code blocks with a copy button, a live caret. */
+.md.chat { font-size: 13px; line-height: 1.62; }
+.md.chat p, .md.chat ul, .md.chat ol, .md.chat blockquote { margin: 0.55em 0; }
+.md.chat li { margin: 0.2em 0; }
+.md.chat .codeblock { position: relative; margin: 0.7em 0; }
+.md.chat .codeblock pre { margin: 0; background: --alpha(var(--color-white) / 4.5%); border: 1px solid --alpha(var(--color-white) / 6%); border-radius: 10px; padding: 0.75em 0.9em; }
+.md.chat .codeblock .copy {
+  position: absolute; top: 6px; right: 6px; height: 22px; padding: 0 8px; border-radius: 6px;
+  font-size: 11px; color: --alpha(var(--color-white) / 60%); background: rgb(30 30 32 / 0.9);
+  opacity: 0; transition: opacity 120ms;
+}
+.md.chat .codeblock:hover .copy { opacity: 1; }
+.md.chat .codeblock .copy:hover { color: var(--color-white); background: rgb(60 60 64); }
+[data-appearance="light"] .md.chat .codeblock .copy {
+  color: --alpha(var(--color-white) / 72%);
+  background: rgb(255 255 255 / 0.92);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.08);
+}
+[data-appearance="light"] .md.chat .codeblock .copy:hover { background: rgb(232 232 236); }
+.md.chat table { width: 100%; font-size: 12px; margin: 0.7em 0; }
+.md.chat th { background: --alpha(var(--color-white) / 5%); text-align: left; font-weight: 600; }
+.md.chat.streaming > :last-child::after {
+  content: ""; display: inline-block; width: 7px; height: 14px; margin-left: 2px;
+  vertical-align: -2px; border-radius: 1.5px; background: --alpha(var(--color-white) / 75%);
+  animation: caret 1s steps(1) infinite;
+}
+@keyframes caret { 50% { opacity: 0; } }
+
+/* Menus, popovers, toasts and floating bars. */
+@utility surface-menu {
+  background: var(--menu-fill);
+  backdrop-filter: var(--layer-blur);
+}
+
+/* A panel-sized layer over other content, e.g. task detail. */
+@utility surface-sheet {
+  background: var(--sheet-fill);
+  backdrop-filter: var(--layer-blur);
+}
+
+/* Fades a scroll area's edges, but only where more content continues past
+   them. Without scroll-driven animation support, or when the element doesn't
+   scroll, the timeline is inactive and nothing is masked. */
+@property --fade-top { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --fade-bottom { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@keyframes scroll-fade {
+  0% { --fade-top: 0px; --fade-bottom: 22px; }
+  4%, 96% { --fade-top: 14px; --fade-bottom: 22px; }
+  100% { --fade-top: 14px; --fade-bottom: 0px; }
+}
+@utility scroll-fade {
+  mask-image: linear-gradient(to bottom, transparent, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent);
+  animation: scroll-fade linear both;
+  animation-timeline: scroll(self);
+}
