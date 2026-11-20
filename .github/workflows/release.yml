@@ -9,7 +9,10 @@
 #                                       for a key generated without one
 #
 # Release steps: bump the version in package.json, src-tauri/Cargo.toml and
-# src-tauri/tauri.conf.json, commit, then `git tag v0.2.0 && git push --tags`.
+# src-tauri/tauri.conf.json, commit, then tag with the notes as the message:
+#   git tag -a v0.2.0 -m "Pill 0.2.0" -m "- What changed" && git push origin v0.2.0
+# Everything after the first paragraph becomes the release notes, which the
+# in-app updater shows too.
 
 name: Release
 
@@ -95,6 +98,22 @@ jobs:
             ConvertTo-Json -Depth 5 |
             Set-Content -Encoding utf8 src-tauri/tauri.release.conf.json
 
+      # NOTE: checkout leaves annotated tags as plain refs, so fetch the tag
+      # object itself to read its message.
+      - name: Read the release notes from the tag
+        id: notes
+        shell: bash
+        run: |
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          body=$(git tag -l --format="%(contents:body)" "${GITHUB_REF_NAME}")
+          [ -n "$body" ] || body="See the commits since the previous release for what changed."
+          {
+            echo "version=${GITHUB_REF_NAME#v}"
+            echo "body<<PILL_NOTES"
+            echo "$body"
+            echo "PILL_NOTES"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build and publish
         # SECURITY: pinned to a commit (v0.6.2); this step holds the updater key.
         uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5
@@ -104,8 +123,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: Pill ${{ github.ref_name }}
-          releaseBody: See the commits since the previous release for what changed.
+          releaseName: Pill ${{ steps.notes.outputs.version }}
+          releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: true
           prerelease: false
           includeUpdaterJson: true
