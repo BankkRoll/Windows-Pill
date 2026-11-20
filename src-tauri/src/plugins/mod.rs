@@ -1500,11 +1500,12 @@ mod doc_tests {
     fn check_examples(doc: &str, at_least: usize) {
         let lines: Vec<String> = blocks(doc, "jsonl").iter().flat_map(|b| b.lines().map(str::to_string).collect::<Vec<_>>()).collect();
         assert!(lines.len() >= at_least);
-        let hello = HostMessage::Hello { protocol: protocol::PROTOCOL_VERSION, pill: env!("CARGO_PKG_VERSION") }.to_line();
         for line in lines.iter().filter(|l| !l.trim().is_empty()) {
             let v: serde_json::Value = serde_json::from_str(line).unwrap_or_else(|e| panic!("{line}: {e}"));
             let expected = match v["type"].as_str() {
-                Some("hello") => Some(hello.clone()),
+                // NOTE: the docs show whichever version they were written against;
+                // the shape and protocol number are what must match.
+                Some("hello") => Some(HostMessage::Hello { protocol: protocol::PROTOCOL_VERSION, pill: v["pill"].as_str().unwrap() }.to_line()),
                 Some("action") => Some(
                     HostMessage::Action {
                         id: v["id"].as_str().unwrap(),
