@@ -140,7 +140,11 @@ pub fn same_path(a: &Path, b: &Path) -> bool {
     fn norm(p: &Path) -> String {
         p.to_string_lossy().replace('/', "\\").trim_end_matches('\\').to_lowercase()
     }
+    // COMPAT: git reports long paths, but TEMP and some user folders come as
+    // 8.3 short names (C:\Users\RUNNER~1); resolving both settles it when the
+    // paths exist.
     norm(a) == norm(b)
+        || matches!((std::fs::canonicalize(a), std::fs::canonicalize(b)), (Ok(x), Ok(y)) if norm(&x) == norm(&y))
 }
 
 /// Whether `name` can name a worktree folder: a task, run or chat id, plus
