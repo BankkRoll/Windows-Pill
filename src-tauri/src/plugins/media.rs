@@ -1168,8 +1168,8 @@ mod imp {
                 color.and_then(|mut px| {
                     // COMPAT: old 24-bit icons carry no alpha; their
                     // transparency lives in the AND mask (white = clear).
-                    let has_alpha = px.chunks_exact(4).any(|p| p[3] != 0);
-                    for (i, p) in px.chunks_exact_mut(4).enumerate() {
+                    let has_alpha = px.as_chunks::<4>().0.iter().any(|p| p[3] != 0);
+                    for (i, p) in px.as_chunks_mut::<4>().0.iter_mut().enumerate() {
                         p.swap(0, 2);
                         if !has_alpha {
                             let clear = mask.as_ref().is_some_and(|m| m[i * 4] != 0);
